@@ -287,7 +287,7 @@ class GRUModel {
         return model;
     }
 
-    async trainModel(trainData, testData, epochs = 15, batchSize = 4) {
+    async trainModel(trainData, testData, epochs = 5, batchSize = 4) {
         this.log('🎯 Starting model training process...');
         this.isTraining = true;
     
@@ -701,13 +701,13 @@ class StartupRiskApp {
         }
 
         this.updateStatus('<span class="loading"></span>Training GRU and LSTM models...');
-        this.log('🧠 Beginning model training with 15 epochs...');
+        this.log('🧠 Beginning model training with 5 epochs...');
         
         try {
             await this.model.trainModel(
                 this.normalizedData.train, 
                 this.normalizedData.test,
-                15,  // epochs
+                5,  // epochs
                 4    // batch size
             );
             
