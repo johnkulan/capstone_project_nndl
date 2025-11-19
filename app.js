@@ -290,7 +290,7 @@ class GRUModel {
     async trainModel(trainData, testData, epochs = 15, batchSize = 4) {
         this.log('🎯 Starting model training process...');
         this.isTraining = true;
-
+    
         // Reshape data for RNN (samples, timesteps, features)
         const trainFeatures = trainData.features.reshape([
             trainData.features.shape[0], 1, trainData.features.shape[1]
@@ -298,7 +298,7 @@ class GRUModel {
         const testFeatures = testData.features.reshape([
             testData.features.shape[0], 1, testData.features.shape[1]
         ]);
-
+    
         try {
             // Train GRU model
             const inputShape = trainData.features.shape[1];
@@ -320,12 +320,13 @@ class GRUModel {
                     }
                 }
             });
-
+    
             // Train LSTM model for comparison
             this.log('🧠 Training LSTM model for comparison...');
             this.lstmModel = this.buildModel(inputShape, 'lstm', 32);
             
-            await this.lstmModel.fit(trainFeatures, testData.labels, {
+            // FIXED: Use trainData.labels instead of testData.labels for training
+            await this.lstmModel.fit(trainFeatures, trainData.labels, {
                 epochs: epochs,
                 batchSize: batchSize,
                 validationData: [testFeatures, testData.labels],
@@ -335,7 +336,7 @@ class GRUModel {
                     }
                 }
             });
-
+    
             this.log('✅ Model training completed!');
             return { success: true };
         } finally {
