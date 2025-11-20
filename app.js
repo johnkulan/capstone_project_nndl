@@ -287,10 +287,10 @@ class GRUModel {
         return model;
     }
 
-    async trainModel(trainData, testData, epochs = 5, batchSize = 4) {
+    async trainModel(trainData, testData, epochs = 15, batchSize = 4) {
         this.log('🎯 Starting model training process...');
         this.isTraining = true;
-    
+
         // Reshape data for RNN (samples, timesteps, features)
         const trainFeatures = trainData.features.reshape([
             trainData.features.shape[0], 1, trainData.features.shape[1]
@@ -298,7 +298,7 @@ class GRUModel {
         const testFeatures = testData.features.reshape([
             testData.features.shape[0], 1, testData.features.shape[1]
         ]);
-    
+
         try {
             // Train GRU model
             const inputShape = trainData.features.shape[1];
@@ -320,12 +320,11 @@ class GRUModel {
                     }
                 }
             });
-    
+
             // Train LSTM model for comparison
             this.log('🧠 Training LSTM model for comparison...');
             this.lstmModel = this.buildModel(inputShape, 'lstm', 32);
             
-            // FIXED: Use trainData.labels instead of testData.labels for training
             await this.lstmModel.fit(trainFeatures, trainData.labels, {
                 epochs: epochs,
                 batchSize: batchSize,
@@ -336,7 +335,7 @@ class GRUModel {
                     }
                 }
             });
-    
+
             this.log('✅ Model training completed!');
             return { success: true };
         } finally {
@@ -368,46 +367,32 @@ class GRUModel {
             const lstmLoss = lstmEvaluation[0].dataSync()[0];
             const lstmAccuracy = lstmEvaluation[1].dataSync()[0];
 
-            // Get detailed predictions for additional metrics
-            const gruPredValues = await this.model.predict(testFeatures).dataSync();
-            const lstmPredValues = await this.lstmModel.predict(testFeatures).dataSync();
-            const trueLabels = await testData.labels.dataSync();
-
-            // Calculate additional metrics
-            const gruMetrics = this.calculateDetailedMetrics(gruPredValues, trueLabels);
-            const lstmMetrics = this.calculateDetailedMetrics(lstmPredValues, trueLabels);
+            // Show some sample predictions
+            const samplePredictions = await this.getSamplePredictions(testData);
 
             this.log(`✅ GRU Evaluation - Loss: ${gruLoss.toFixed(4)}, Accuracy: ${gruAccuracy.toFixed(4)}`);
             this.log(`✅ LSTM Evaluation - Loss: ${lstmLoss.toFixed(4)}, Accuracy: ${lstmAccuracy.toFixed(4)}`);
-            this.log(`📈 GRU Detailed - Precision: ${gruMetrics.precision.toFixed(4)}, Recall: ${gruMetrics.recall.toFixed(4)}, F1: ${gruMetrics.f1Score.toFixed(4)}`);
-            this.log(`📈 LSTM Detailed - Precision: ${lstmMetrics.precision.toFixed(4)}, Recall: ${lstmMetrics.recall.toFixed(4)}, F1: ${lstmMetrics.f1Score.toFixed(4)}`);
 
             // Update UI with metrics
             this.updateMetricsUI({
                 gru: {
                     loss: gruLoss,
-                    accuracy: gruAccuracy,
-                    precision: gruMetrics.precision,
-                    f1Score: gruMetrics.f1Score
+                    accuracy: gruAccuracy
                 },
                 lstm: {
                     loss: lstmLoss,
-                    accuracy: lstmAccuracy,
-                    precision: lstmMetrics.precision,
-                    f1Score: lstmMetrics.f1Score
+                    accuracy: lstmAccuracy
                 }
             });
 
             return {
                 gru: {
                     loss: gruLoss,
-                    accuracy: gruAccuracy,
-                    ...gruMetrics
+                    accuracy: gruAccuracy
                 },
                 lstm: {
                     loss: lstmLoss,
-                    accuracy: lstmAccuracy,
-                    ...lstmMetrics
+                    accuracy: lstmAccuracy
                 }
             };
         } finally {
@@ -415,57 +400,12 @@ class GRUModel {
         }
     }
 
-    calculateDetailedMetrics(predictions, trueLabels) {
-        let truePositives = 0;
-        let falsePositives = 0;
-        let trueNegatives = 0;
-        let falseNegatives = 0;
-
-        predictions.forEach((pred, i) => {
-            const predictedClass = pred > 0.5 ? 1 : 0;
-            const trueClass = trueLabels[i];
-
-            if (predictedClass === 1 && trueClass === 1) truePositives++;
-            else if (predictedClass === 1 && trueClass === 0) falsePositives++;
-            else if (predictedClass === 0 && trueClass === 0) trueNegatives++;
-            else if (predictedClass === 0 && trueClass === 1) falseNegatives++;
-        });
-
-        const precision = truePositives / (truePositives + falsePositives) || 0;
-        const recall = truePositives / (truePositives + falseNegatives) || 0;
-        const f1Score = 2 * (precision * recall) / (precision + recall) || 0;
-
-        return {
-            truePositives,
-            falsePositives,
-            trueNegatives,
-            falseNegatives,
-            precision,
-            recall,
-            f1Score
-        };
-    }
-
-    updateMetricsUI(metrics) {
-        // Update GRU metrics
-        document.getElementById('gruAccuracy').textContent = metrics.gru.accuracy.toFixed(4);
-        document.getElementById('gruLoss').textContent = metrics.gru.loss.toFixed(4);
-        document.getElementById('gruPrecision').textContent = metrics.gru.precision.toFixed(4);
-        document.getElementById('gruF1Score').textContent = metrics.gru.f1Score.toFixed(4);
-
-        // Update LSTM metrics
-        document.getElementById('lstmAccuracy').textContent = metrics.lstm.accuracy.toFixed(4);
-        document.getElementById('lstmLoss').textContent = metrics.lstm.loss.toFixed(4);
-        document.getElementById('lstmPrecision').textContent = metrics.lstm.precision.toFixed(4);
-        document.getElementById('lstmF1Score').textContent = metrics.lstm.f1Score.toFixed(4);
-    }
-
-    async testRandomSamples(testData, count = 3) {
+    async getSamplePredictions(testData, count = 3) {
         if (!this.model) {
             throw new Error('Model not trained. Train the model first.');
         }
 
-        this.log(`🔍 Testing ${count} random samples...`);
+        this.log(`🔍 Generating ${count} sample predictions...`);
 
         const testFeatures = testData.features.reshape([
             testData.features.shape[0], 1, testData.features.shape[1]
@@ -474,15 +414,10 @@ class GRUModel {
         const predValues = await predictions.dataSync();
         const trueLabels = await testData.labels.dataSync();
 
-        // Select random indices
+        // Select first few samples
         const indices = [];
-        const usedIndices = new Set();
-        while (indices.length < count && indices.length < testData.features.shape[0]) {
-            const idx = Math.floor(Math.random() * testData.features.shape[0]);
-            if (!usedIndices.has(idx)) {
-                indices.push(idx);
-                usedIndices.add(idx);
-            }
+        for (let i = 0; i < Math.min(count, testData.features.shape[0]); i++) {
+            indices.push(i);
         }
 
         const results = indices.map(idx => ({
@@ -495,7 +430,7 @@ class GRUModel {
             correct: (predValues[idx] > 0.5) === (trueLabels[idx] === 1)
         }));
 
-        this.displayRandomPredictions(results);
+        this.displaySamplePredictions(results);
         
         testFeatures.dispose();
         predictions.dispose();
@@ -503,9 +438,9 @@ class GRUModel {
         return results;
     }
 
-    displayRandomPredictions(results) {
+    displaySamplePredictions(results) {
         const container = document.getElementById('predictionsContainer');
-        container.innerHTML = '<h3 style="color: #4a5568; margin-bottom: 15px;">🎯 Random Sample Predictions</h3>';
+        container.innerHTML = '<h3 style="color: #4a5568; margin-bottom: 15px;">🎯 Sample Predictions</h3>';
 
         results.forEach(result => {
             const card = document.createElement('div');
@@ -538,6 +473,16 @@ class GRUModel {
             
             container.appendChild(card);
         });
+    }
+
+    updateMetricsUI(metrics) {
+        // Update GRU metrics
+        document.getElementById('gruAccuracy').textContent = metrics.gru.accuracy.toFixed(4);
+        document.getElementById('gruLoss').textContent = metrics.gru.loss.toFixed(4);
+
+        // Update LSTM metrics
+        document.getElementById('lstmAccuracy').textContent = metrics.lstm.accuracy.toFixed(4);
+        document.getElementById('lstmLoss').textContent = metrics.lstm.loss.toFixed(4);
     }
 
     async saveModel() {
@@ -602,7 +547,6 @@ class StartupRiskApp {
         document.getElementById('loadDataBtn').addEventListener('click', () => this.loadData());
         document.getElementById('trainBtn').addEventListener('click', () => this.trainModel());
         document.getElementById('evaluateBtn').addEventListener('click', () => this.evaluateModel());
-        document.getElementById('testRandomBtn').addEventListener('click', () => this.testRandomSamples());
         document.getElementById('saveModelBtn').addEventListener('click', () => this.saveModel());
         document.getElementById('resetBtn').addEventListener('click', () => this.resetApp());
     }
@@ -648,12 +592,7 @@ class StartupRiskApp {
             this.setButtonState('evaluateBtn', true);
             await this.evaluateModel();
             
-            // Step 4: Test Random Samples
-            await new Promise(resolve => setTimeout(resolve, 500));
-            this.setButtonState('testRandomBtn', true);
-            await this.testRandomSamples();
-            
-            // Step 5: Enable model saving
+            // Step 4: Enable model saving
             this.setButtonState('saveModelBtn', true);
             
             this.log('✅ === AUTOMATED PROCESS COMPLETED SUCCESSFULLY ===');
@@ -701,13 +640,13 @@ class StartupRiskApp {
         }
 
         this.updateStatus('<span class="loading"></span>Training GRU and LSTM models...');
-        this.log('🧠 Beginning model training with 5 epochs...');
+        this.log('🧠 Beginning model training with 15 epochs...');
         
         try {
             await this.model.trainModel(
                 this.normalizedData.train, 
                 this.normalizedData.test,
-                5,  // epochs
+                15,  // epochs
                 4    // batch size
             );
             
@@ -732,29 +671,14 @@ class StartupRiskApp {
         try {
             const metrics = await this.model.evaluateModel(this.normalizedData.test);
             
-            this.log(`📈 Final GRU Metrics - Accuracy: ${metrics.gru.accuracy.toFixed(4)}, F1: ${metrics.gru.f1Score.toFixed(4)}`);
-            this.log(`📈 Final LSTM Metrics - Accuracy: ${metrics.lstm.accuracy.toFixed(4)}, F1: ${metrics.lstm.f1Score.toFixed(4)}`);
+            this.log(`📈 Final GRU Metrics - Accuracy: ${metrics.gru.accuracy.toFixed(4)}`);
+            this.log(`📈 Final LSTM Metrics - Accuracy: ${metrics.lstm.accuracy.toFixed(4)}`);
             
             this.updateStatus('✅ Model evaluation completed');
             return metrics;
         } catch (error) {
             this.log(`❌ Error evaluating model: ${error.message}`);
             this.updateStatus('❌ Model evaluation failed');
-        }
-    }
-
-    async testRandomSamples() {
-        if (!this.model.model) {
-            this.log('❌ No trained model available for testing');
-            return;
-        }
-
-        this.updateStatus('<span class="loading"></span>Testing random samples...');
-        try {
-            await this.model.testRandomSamples(this.normalizedData.test, 3);
-            this.updateStatus('✅ Random sample testing completed');
-        } catch (error) {
-            this.log(`❌ Error testing random samples: ${error.message}`);
         }
     }
 
@@ -792,21 +716,16 @@ class StartupRiskApp {
         // Reset metrics
         document.getElementById('gruAccuracy').textContent = '-';
         document.getElementById('gruLoss').textContent = '-';
-        document.getElementById('gruPrecision').textContent = '-';
-        document.getElementById('gruF1Score').textContent = '-';
         document.getElementById('lstmAccuracy').textContent = '-';
         document.getElementById('lstmLoss').textContent = '-';
-        document.getElementById('lstmPrecision').textContent = '-';
-        document.getElementById('lstmF1Score').textContent = '-';
         
-        document.getElementById('predictionsContainer').innerHTML = '';
+        document.getElementById('predictionsContainer').innerHTML = '<p>Predictions will appear here after evaluation...</p>';
         
         // Reset buttons
         this.setButtonState('startBtn', true);
         this.setButtonState('loadDataBtn', false);
         this.setButtonState('trainBtn', false);
         this.setButtonState('evaluateBtn', false);
-        this.setButtonState('testRandomBtn', false);
         this.setButtonState('saveModelBtn', false);
         
         this.log('✅ Application reset complete. Ready to start again.');
