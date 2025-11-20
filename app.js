@@ -287,7 +287,7 @@ class GRUModel {
         return model;
     }
 
-    async trainModel(trainData, testData, epochs = 15, batchSize = 4) {
+    async trainModel(trainData, testData, epochs = 3, batchSize = 4) {
         this.log('🎯 Starting model training process...');
         this.isTraining = true;
 
@@ -314,7 +314,7 @@ class GRUModel {
                         this.log(`📊 GRU Epoch ${epoch + 1}/${epochs} - Loss: ${logs.loss.toFixed(4)}, Acc: ${logs.acc.toFixed(4)}`);
                         
                         // Memory management
-                        if (epoch % 5 === 0) {
+                        if (epoch % 3 === 0) {
                             await tf.nextFrame();
                         }
                     }
@@ -646,7 +646,7 @@ class StartupRiskApp {
             await this.model.trainModel(
                 this.normalizedData.train, 
                 this.normalizedData.test,
-                15,  // epochs
+                3,  // epochs
                 4    // batch size
             );
             
