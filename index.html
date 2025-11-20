@@ -243,7 +243,6 @@
                 <button id="loadDataBtn" disabled>📊 Load Data</button>
                 <button id="trainBtn" disabled>🤖 Train Model</button>
                 <button id="evaluateBtn" disabled>📈 Evaluate</button>
-                <button id="testRandomBtn" disabled>🎲 Test Samples</button>
                 <button id="saveModelBtn" disabled>💾 Save Model</button>
                 <button id="resetBtn">🔄 Reset</button>
             </div>
@@ -269,14 +268,6 @@
                                 <div class="metric-label">Loss</div>
                                 <div class="metric-value" id="gruLoss">-</div>
                             </div>
-                            <div class="metric-card">
-                                <div class="metric-label">Precision</div>
-                                <div class="metric-value" id="gruPrecision">-</div>
-                            </div>
-                            <div class="metric-card">
-                                <div class="metric-label">F1-Score</div>
-                                <div class="metric-value" id="gruF1Score">-</div>
-                            </div>
                         </div>
                     </div>
                     
@@ -291,22 +282,16 @@
                                 <div class="metric-label">Loss</div>
                                 <div class="metric-value" id="lstmLoss">-</div>
                             </div>
-                            <div class="metric-card">
-                                <div class="metric-label">Precision</div>
-                                <div class="metric-value" id="lstmPrecision">-</div>
-                            </div>
-                            <div class="metric-card">
-                                <div class="metric-label">F1-Score</div>
-                                <div class="metric-value" id="lstmF1Score">-</div>
-                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
             <div class="panel">
-                <h2>🔮 Predictions & Results</h2>
-                <div id="predictionsContainer" class="predictions-grid"></div>
+                <h2>🔮 Sample Predictions</h2>
+                <div id="predictionsContainer" class="predictions-grid">
+                    <p>Predictions will appear here after evaluation...</p>
+                </div>
             </div>
         </div>
 
