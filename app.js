@@ -301,7 +301,7 @@ class GRUModel {
                 validationData: [testFeatures, testData.labels],
                 callbacks: {
                     onEpochEnd: async (epoch, logs) => {
-                        this.log(`📊 Epoch ${epoch + 1}/${epochs} - Loss: ${logs.loss.toFixed(4)}, Acc: ${logs.acc.toFixed(4)}, Val Loss: ${logs.val_loss.toFixed(4)}, Val Acc: ${logs.val_acc.toFixed(4)}`);
+                        this.log(`📊 GRU Epoch ${epoch + 1}/${epochs} - Loss: ${logs.loss.toFixed(4)}, Acc: ${logs.acc.toFixed(4)}`);
                         
                         // Memory management
                         if (epoch % 3 === 0) {
@@ -340,7 +340,7 @@ class GRUModel {
             // Show some sample predictions
             const samplePredictions = await this.getSamplePredictions(testData);
 
-            this.log(`✅ Evaluation - Loss: ${loss.toFixed(4)}, Accuracy: ${accuracy.toFixed(4)}`);
+            this.log(`✅ GRU Evaluation - Loss: ${loss.toFixed(4)}, Accuracy: ${accuracy.toFixed(4)}`);
 
             // Update UI with metrics
             this.updateMetricsUI({
@@ -443,9 +443,9 @@ class GRUModel {
             throw new Error('No model to save.');
         }
 
-        this.log('💾 Saving model...');
+        this.log('💾 Saving GRU model...');
         await this.model.save('downloads://startup-risk-gru-model');
-        this.log('✅ Model saved successfully!');
+        this.log('✅ GRU model saved successfully!');
     }
 
     dispose() {
@@ -597,7 +597,7 @@ class StartupRiskApp {
                 this.normalizedData.train, 
                 this.normalizedData.test,
                 3,  // epochs
-                4   // batch size
+                4    // batch size
             );
             
             this.updateStatus('✅ Model training completed');
@@ -621,7 +621,7 @@ class StartupRiskApp {
         try {
             const metrics = await this.model.evaluateModel(this.normalizedData.test);
             
-            this.log(`📈 Final Metrics - Accuracy: ${metrics.accuracy.toFixed(4)}`);
+            this.log(`📈 Final GRU Metrics - Accuracy: ${metrics.accuracy.toFixed(4)}`);
             
             this.updateStatus('✅ Model evaluation completed');
             return metrics;
